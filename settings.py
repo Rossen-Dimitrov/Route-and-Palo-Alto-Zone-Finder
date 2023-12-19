@@ -1,0 +1,6 @@
+TACACS_PASS = 'your_password_here'
+EVI_ROUTER = 'ssh username@IP_Address\n'
+JUMP_SERVER_IP = 'IP_Address'
+JUMP_USER = 'username'
+JUMP_PASS = 'your_password_here'
+FW_IP = 'ssh username@IP_Address\n'
