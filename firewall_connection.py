@@ -31,4 +31,4 @@ def send_commands_to_pa(pa_connection, command, string, wait=2):
 def disconnect_from_pa(pa_connection):
     if pa_connection:
         pa_connection.disconnect()
-    print("Disconnected from EVI Router")
+    print("Disconnected from PA")
