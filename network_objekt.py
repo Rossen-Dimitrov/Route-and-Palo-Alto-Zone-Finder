@@ -7,4 +7,4 @@ class Network:
         self.zone = zone
 
     def __str__(self):
-        return f"{self.network}/{self.net_mask} - {self.fw_name} - {self.zone} - {self.interface}"
+        return f"{self.network}/{self.net_mask} - {self.fw_name} - {self.zone}"
