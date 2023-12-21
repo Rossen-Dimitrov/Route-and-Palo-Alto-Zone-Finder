@@ -18,7 +18,7 @@ with open('ip_list.txt', 'r') as f:
     for ip in ip_list:
         print('!', end="")
         ip_mask = ip.split('/')
-        ip, mask = ip_mask[0],  ip_mask[1],
+        ip, host_mask = ip_mask[0],  ip_mask[1],
         command = f'display ip routing-table vpn-instance bcn-core {ip}'
         output = send_commands_to_evi(evi_connection, command)
         net = output.splitlines()[-1].split()[0]
@@ -26,17 +26,16 @@ with open('ip_list.txt', 'r') as f:
         interface = output.splitlines()[-1].split()[5]
 
         if interface in pa_fw_mapping:
-            network = Network(ip, mask, pa_fw_mapping[interface])
+            network = Network(ip, host_mask, network, net_mask, pa_fw_mapping[interface])
             pa_networks_list.append(network)
 
         elif interface in sap_fw_mapping:
             if not any(obj.network == network for obj in sap_networks_list):
-                network = Network(network, net_mask, sap_fw_mapping[interface])
+                network = Network(ip, host_mask, network, net_mask, pa_fw_mapping[interface])
                 sap_networks_list.append(network)
 
         else:
-            interface = 'BCN'
-            network = Network(network, net_mask, interface)
+            network = Network(ip, host_mask, network, net_mask, zone='BCN')
             bcn_networks_list.append(network)
     print('')
 
@@ -49,7 +48,8 @@ pa_connection = connect_to_palo_alto(jump_connection)
 print('Collecting info from PA')
 
 for net in pa_networks_list:
-    command = f'test routing fib-lookup virtual-router {net.fw_name} ip {net.network}'
+    command = f'test routing fib-lookup virtual-router {net.fw_name} ip {net.ip}'
+    print(command)
     output = send_commands_to_pa(pa_connection, command, r"---------", wait=2)
     if 'via' in output:
         interface = output.strip().splitlines()[6].split()[3][:-1]
@@ -75,13 +75,13 @@ print()
 sorted_bcn_networks_list = sorted(bcn_networks_list, key=lambda x: x.network)
 
 for net in sorted_bcn_networks_list:
-    print(net)
+    print(f"{net.ip}/{net.host_mask} - {net.network}/{net_mask} - {net.zone}")
 
 print()
 sorted_sap_networks_list = sorted(sap_networks_list, key=lambda x: x.network)
 
 for net in sorted_sap_networks_list:
-    print(net)
+    print(f'{net.ip}/{net.host_mask} - {net.network}/{net_mask} - {net.zone}')
 
 print()
 print('#' * 50, end='\n')
