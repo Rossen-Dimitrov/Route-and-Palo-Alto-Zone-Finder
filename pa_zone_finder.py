@@ -17,7 +17,8 @@ with open('ip_list.txt', 'r') as f:
 
     for ip in ip_list:
         print('!', end="")
-        ip = ip.split('/')[0]
+        ip_mask = ip.split('/')
+        ip, mask = ip_mask[0],  ip_mask[1],
         command = f'display ip routing-table vpn-instance bcn-core {ip}'
         output = send_commands_to_evi(evi_connection, command)
         net = output.splitlines()[-1].split()[0]
@@ -25,9 +26,8 @@ with open('ip_list.txt', 'r') as f:
         interface = output.splitlines()[-1].split()[5]
 
         if interface in pa_fw_mapping:
-            if not any(obj.network == network for obj in pa_networks_list):
-                network = Network(network, net_mask, pa_fw_mapping[interface])
-                pa_networks_list.append(network)
+            network = Network(ip, mask, pa_fw_mapping[interface])
+            pa_networks_list.append(network)
 
         elif interface in sap_fw_mapping:
             if not any(obj.network == network for obj in sap_networks_list):
