@@ -51,23 +51,20 @@ print('Collecting info from PA')
 for net in pa_networks_list:
     command = f'test routing fib-lookup virtual-router {net.fw_name} ip {net.network}'
     output = send_commands_to_pa(pa_connection, command, r"---------", wait=2)
-
-    if 'ae1.2221' in output:
-        zone = "NSX-T-Default"
-        interface = 'ae1.2221'
-
+    if 'via' in output:
+        interface = output.strip().splitlines()[6].split()[3][:-1]
     else:
-        interface = output.strip().splitlines()[6].split()[1]
-        vlan = interface[4:]
-        zone_command = f"show zone-protection | match {vlan}"
-        zone_output = send_commands_to_pa(pa_connection, zone_command, r"Zone", wait=2).strip()
-        zone = zone_output.split()[1]
+        interface = output.strip().splitlines()[6].split()[1][:-1]
+
+    zone_command = f"show interface {interface} | match Zone:"
+    print(zone_command)
+    zone_output = send_commands_to_pa(pa_connection, zone_command, string=r"virtual system:", wait=0.2)
+    zone = zone_output.split()[1]
     net.interface = interface
     net.zone = zone
 
 print()
-print('#' * 50)
-print()
+print('#' * 50, end='\n')
 
 sorted_pa_networks_list = sorted(pa_networks_list, key=lambda x: x.network)
 
@@ -87,8 +84,7 @@ for net in sorted_sap_networks_list:
     print(net)
 
 print()
-print('#' * 50)
-print()
+print('#' * 50, end='\n')
 
 disconnect_from_pa(pa_connection)
 disconnect_from_jump_server(jump_connection)
