@@ -13,8 +13,15 @@ device = {
 
 def connect_to_jump_server():
     """Disconnects from device if connected"""
-    jump_connection = ConnectHandler(**device)
-    print(f"### Connected to Jump Server: {jump_connection.find_prompt().upper().split()[0]} ###")
+    try:
+        jump_connection = ConnectHandler(**device)
+        print(f"### Connected to Jump Server: {jump_connection.find_prompt().upper().split()[0]} ###")
+    except:
+        print(f"Connection !!! FILED !!!"
+              f"\nPlease check password in settings.py or "
+              f"\nconnectivity to JUMP SERVER {JUMP_SERVER_IP}")
+        exit()
+
     return jump_connection
 
 
