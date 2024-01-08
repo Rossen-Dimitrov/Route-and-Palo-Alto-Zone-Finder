@@ -23,10 +23,18 @@ def connect_to_evi(evi_connection):
     if 'The authenticity of host' in jump_server_output:
         evi_connection.write_channel('yes\n')
 
-    if 'password' in jump_server_output:
+    if 'assword' in jump_server_output:
         evi_connection.write_channel(TACACS_PASS)
-    redispatch(evi_connection, device_type='hp_comware')
-    print(f"Connected to: {evi_connection.find_prompt()}")
+
+    try:
+        redispatch(evi_connection, device_type='hp_comware')
+        print(f"Connected to: {evi_connection.find_prompt()}")
+
+    except:
+        print(f"Connection !!! FILED !!!"
+              f"\nPlease check password in settings.py or "
+              f"\nconnectivity to EVI Router {EVI_ROUTER}")
+        exit()
 
     return evi_connection
 
