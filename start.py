@@ -21,12 +21,16 @@ with open('ip_list.txt', 'r') as f:
     for ip in ip_list:
         """ Sending commands for each IP Route """
         print('!', end="")
-        ip_mask = ip.split('/')
-        ip, host_mask = ip_mask[0],  ip_mask[1],
+        host_subnet = ip.split('/')
+        ip = host_subnet[0]
+        host_mask = '32'
+        if len(host_subnet) == 2:
+            host_mask = host_subnet[1]
+
         command = f'display ip routing-table vpn-instance bcn-core {ip}'
         output = send_commands_to_evi(evi_connection, command).splitlines()
-        net = output[-1].split()[0]
-        network, net_mask = net.split('/')
+        subnet = output[-1].split()[0]
+        network, net_mask = subnet.split('/')
         interface = output[-1].split()[5]
         directly_connected = output[-1].split()[1]
 
@@ -57,9 +61,10 @@ if pa_networks_list:
     pa_connection = connect_to_palo_alto(jump_connection)
     print('Collecting info from PA')
 
-    for net in pa_networks_list:
+    for subnet in pa_networks_list:
         """ Finding zones """
-        command = f'test routing fib-lookup virtual-router {net.fw_name} ip {net.ip}'
+        print('!', end="")
+        command = f'test routing fib-lookup virtual-router {subnet.fw_name} ip {subnet.host}'
 
         output = send_commands_to_pa(pa_connection, command, r"---------", wait=2)
         if 'via' in output:
@@ -69,11 +74,18 @@ if pa_networks_list:
         else:
             interface = output.strip().splitlines()[6].split()[1][:-1]
 
-        zone_command = f"show interface {interface} | match Zone:"
-        zone_output = send_commands_to_pa(pa_connection, zone_command, string=r"virtual system:", wait=0.2)
-        zone = zone_output.split()[1][:-1]
-        net.interface = interface
-        net.zone = zone
+        command = f"show interface {interface} | match Zone:"
+        output = send_commands_to_pa(pa_connection, command, string=r"virtual system:", wait=0.2)
+        zone = output.split()[1][:-1]
+        subnet.interface = interface
+        subnet.zone = zone
+
+        command = f"show interface {interface} | match address:"
+        output = send_commands_to_pa(pa_connection, command, string=r"Interface IP address:", wait=0.2)
+        result = output.split()[3]
+        gw, mask = result.split('/')
+        subnet.network = gw
+        subnet.net_mask = mask
 
     print()
     disconnect_from_pa(pa_connection)
@@ -86,25 +98,25 @@ print('#' * 50, end='\n')
 if pa_networks_list:
     sorted_pa_networks_list = sorted(pa_networks_list, key=lambda x: x.network)
 
-    for net in sorted_pa_networks_list:
-        print(net)
+    for subnet in sorted_pa_networks_list:
+        print(subnet)
 
 if bcn_networks_list:
     sorted_bcn_networks_list = sorted(bcn_networks_list, key=lambda x: x.network)
 
-    for net in sorted_bcn_networks_list:
-        print(f"{net.ip}/{net.host_mask} - {net.network}/{net_mask} - {net.zone}")
+    for subnet in sorted_bcn_networks_list:
+        print(f"{subnet.host}/{subnet.host_mask} - {subnet.network}/{net_mask} - {subnet.zone}")
 
 if sap_networks_list:
     sorted_sap_networks_list = sorted(sap_networks_list, key=lambda x: x.network)
 
-    for net in sorted_sap_networks_list:
-        print(f'{net.ip}/{net.host_mask} - {net.network}/{net_mask} - {net.zone}')
+    for subnet in sorted_sap_networks_list:
+        print(f'{subnet.host}/{subnet.host_mask} - {subnet.network}/{net_mask} - {subnet.zone}')
 
 if vsx_firewall_list:
     sorted_vsx_firewall_list = sorted(vsx_firewall_list, key=lambda x: x.network)
-    for net in sorted_vsx_firewall_list:
-        print(f"{net.ip}/{net.host_mask} - {net.network}/{net_mask} - {net.zone} - {net.interface}")
+    for subnet in sorted_vsx_firewall_list:
+        print(f"{subnet.host}/{subnet.host_mask} - {subnet.network}/{net_mask} - {subnet.zone} - {subnet.interface}")
 
 
 print()
